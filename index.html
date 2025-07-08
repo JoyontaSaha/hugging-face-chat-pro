@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hugging Face Chat Pro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 900px;
+            min-height: 700px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50px;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .config-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .input-group label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group input {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .save-token-btn {
+            position: absolute;
+            right: 10px;
+            top: 35px;
+            padding: 8px 12px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .save-token-btn:hover {
+            background: #218838;
+        }
+
+        .save-token-btn.saved {
+            background: #6c757d;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f8f9fa;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            max-height: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 18px 24px;
+            border-radius: 18px 18px 18px 6px;
+            word-wrap: break-word;
+            animation: slideIn 0.3s ease;
+            line-height: 1.7;
+            font-size: 1.08em;
+            margin-bottom: 2px;
+            box-shadow: 0 2px 8px rgba(80, 80, 120, 0.06);
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 18px 18px 6px 18px;
+            border-bottom-right-radius: 8px;
+            margin-left: 10%;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.10);
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+            background: linear-gradient(135deg, #f7fafd 80%, #e6eaf3 100%);
+            color: #23272f;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 18px 18px 18px 6px;
+            border-bottom-left-radius: 8px;
+            margin-right: 10%;
+            font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+            font-size: 1.08em;
+            box-shadow: 0 2px 12px rgba(102, 126, 234, 0.07);
+            position: relative;              /* make room for copy button */
+        }
+
+        .message pre {
+            background: #f1f3f4;
+            padding: 14px 16px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 14px 0;
+            font-size: 0.98em;
+            border-left: 4px solid #667eea;
+        }
+
+        .message code {
+            background: #f1f3f4;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', 'Fira Mono', 'Courier New', monospace;
+            font-size: 0.98em;
+            color: #e83e8c;
+        }
+
+        .message pre code {
+            background: none;
+            padding: 0;
+            color: #333;
+        }
+
+        .message ul, .message ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .message li {
+            margin: 5px 0;
+        }
+
+        .message strong {
+            color: #495057;
+        }
+
+        .message .console-output {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            position: relative;
+        }
+
+        .message .console-output::before {
+            content: "Console Output";
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 0 8px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            background: white;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            resize: vertical;
+            min-height: 50px;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .send-btn {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            min-width: 80px;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #666;
+        }
+
+        .loading::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .error {
+            background: #ff6b6b !important;
+            color: white !important;
+        }
+
+        .model-category {
+            font-weight: bold;
+            color: #666;
+            font-size: 14px;
+            font-style: italic;
+            background: #f8f9fa;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-free { background: #28a745; }
+        .status-pro { background: #ffc107; }
+        .status-inference { background: #17a2b8; }
+
+        @media (max-width: 768px) {
+            .config-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+        }
+
+        /* Dark Theme Styles */
+        body.dark-mode {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        body.dark-mode .container {
+            background: rgba(30, 30, 50, 0.95);
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .header h1 {
+            background: linear-gradient(45deg, #64b5f6, #9575cd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        body.dark-mode .header p {
+            color: #b0b0b0;
+        }
+
+        body.dark-mode .theme-toggle {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        body.dark-mode .input-group label {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .input-group input,
+        body.dark-mode #modelSelector {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #444;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .input-group input:focus,
+        body.dark-mode #modelSelector:focus {
+            border-color: #64b5f6;
+            box-shadow: 0 0 0 3px rgba(100, 181, 246, 0.2);
+        }
+
+        body.dark-mode .input-group input::placeholder {
+            color: #888;
+        }
+
+        /* Enhanced Model Selector Styling */
+        #modelSelector {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 14px;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 8px;
+            min-height: 44px;
+        }
+
+        #modelSelector:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+        }
+
+        #modelSelector:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        #modelSelector option {
+            padding: 12px;
+            background: white;
+            color: #333;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        #modelSelector optgroup {
+            font-weight: bold;
+            font-size: 15px;
+            background: #f8f9fa;
+            color: #495057;
+            padding: 8px;
+            margin: 4px 0;
+        }
+
+        #modelSelector optgroup[label*="Free"] {
+            background: linear-gradient(90deg, #e8f5e8, #f0f8f0);
+            color: #2d5a2d;
+        }
+
+        #modelSelector optgroup[label*="Pro"] {
+            background: linear-gradient(90deg, #fff4e6, #fff8f0);
+            color: #8b4513;
+        }
+
+        #modelSelector optgroup[label*="Serverless"] {
+            background: linear-gradient(90deg, #e6f3ff, #f0f8ff);
+            color: #1e3a8a;
+        }
+
+        /* Dark theme model selector */
+        body.dark-mode #modelSelector {
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid #555;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode #modelSelector:hover {
+            border-color: #64b5f6;
+            box-shadow: 0 2px 8px rgba(100, 181, 246, 0.2);
+        }
+
+        body.dark-mode #modelSelector:focus {
+            border-color: #64b5f6;
+            box-shadow: 0 0 0 3px rgba(100, 181, 246, 0.2);
+        }
+
+        body.dark-mode #modelSelector option {
+            background: #2a2a3e;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode #modelSelector optgroup {
+            background: #1e1e2e;
+            color: #b0b0b0;
+            border-bottom: 1px solid #444;
+        }
+
+        body.dark-mode #modelSelector optgroup[label*="Free"] {
+            background: linear-gradient(90deg, #1a2e1a, #1e2e1e);
+            color: #90ee90;
+        }
+
+        body.dark-mode #modelSelector optgroup[label*="Pro"] {
+            background: linear-gradient(90deg, #2e1e0a, #2e1e1e);
+            color: #ffd700;
+        }
+
+        body.dark-mode #modelSelector optgroup[label*="Serverless"] {
+            background: linear-gradient(90deg, #0a1e2e, #1e1e2e);
+            color: #87ceeb;
+        }
+
+        /* Dark theme for chat components */
+        body.dark-mode .chat-container {
+            background: rgba(40, 40, 60, 0.8);
+            border: 1px solid #444;
+        }
+
+        body.dark-mode .chat-messages {
+            background: rgba(30, 30, 50, 0.6);
+        }
+
+        body.dark-mode .message.assistant {
+            background: rgba(50, 50, 70, 0.9);
+            color: #e0e0e0;
+            border: 1px solid #555;
+        }
+
+        body.dark-mode .message.user {
+            background: linear-gradient(135deg, #64b5f6, #9575cd);
+            color: #ffffff;
+        }
+
+        body.dark-mode .message pre {
+            background: rgba(20, 20, 35, 0.8);
+            border-left: 4px solid #64b5f6;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .message code {
+            background: rgba(20, 20, 35, 0.6);
+            color: #ff79c6;
+        }
+
+        body.dark-mode .message pre code {
+            background: none;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .message .console-output {
+            background: #0a0a0a;
+            color: #50fa7b;
+            border: 1px solid #333;
+        }
+
+        body.dark-mode .message .console-output::before {
+            background: #0a0a0a;
+            color: #50fa7b;
+        }
+
+        body.dark-mode .message strong {
+            color: #f8f8f2;
+        }
+
+        body.dark-mode .message ul,
+        body.dark-mode .message ol {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .message li {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .chat-input-container {
+            background: rgba(40, 40, 60, 0.9);
+            border-top: 1px solid #555;
+        }
+
+        body.dark-mode .chat-input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #555;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .chat-input:focus {
+            border-color: #64b5f6;
+            box-shadow: 0 0 0 3px rgba(100, 181, 246, 0.2);
+        }
+
+        body.dark-mode .chat-input::placeholder {
+            color: #999;
+        }
+
+        body.dark-mode .send-btn {
+            background: linear-gradient(135deg, #64b5f6, #9575cd);
+            color: #ffffff;
+        }
+
+        body.dark-mode .send-btn:hover {
+            box-shadow: 0 5px 15px rgba(100, 181, 246, 0.4);
+        }
+
+        body.dark-mode .send-btn:disabled {
+            background: rgba(100, 100, 120, 0.5);
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        body.dark-mode .loading {
+            color: #b0b0b0;
+        }
+
+        body.dark-mode .error {
+            background: #dc3545 !important;
+            color: white !important;
+        }
+
+        /* Model category indicators */
+        .model-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        .model-free { background: #28a745; }
+        .model-pro { background: #ffc107; }
+        .model-serverless { background: #17a2b8; }
+
+        /* Enhanced status indicators */
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(40, 167, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+        }
+
+        .status-pro {
+            animation: pulse-gold 2s infinite;
+        }
+
+        @keyframes pulse-gold {
+            0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(255, 193, 7, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+        }
+
+        .status-inference {
+            animation: pulse-blue 2s infinite;
+        }
+
+        @keyframes pulse-blue {
+            0% { box-shadow: 0 0 0 0 rgba(23, 162, 184, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(23, 162, 184, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(23, 162, 184, 0); }
+        }
+
+        /* Model selection helper text */
+        .model-helper {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+            font-style: italic;
+        }
+
+        body.dark-mode .model-helper {
+            color: #999;
+        }
+
+        /* Copy button styling */
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px;
+            border-radius: 4px;
+            color: #888;
+            opacity: 0;
+            transition: opacity 0.2s, color 0.2s;
+        }
+        .message.assistant:hover .copy-btn {
+            opacity: 1;
+        }
+        .copy-btn:hover {
+            color: #333;
+        }
+        body.dark-mode .copy-btn {
+            color: #ccc;
+        }
+        body.dark-mode .copy-btn:hover {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤗 Hugging Face Chat Pro</h1>
+            <p>Connect with deployed models via Inference API</p>
+            <button class="theme-toggle" id="themeToggle">🌙</button>
+        </div>
+
+        <div class="config-section">
+            <div class="input-group">
+                <label for="token">
+                    <span class="status-indicator status-free"></span>
+                    API Token:
+                </label>
+                <input type="password" id="token" placeholder="Enter your HF token">
+                <button class="save-token-btn" id="saveTokenBtn">Save</button>
+            </div>
+            <div class="input-group">
+                <label for="model">Model Name:</label>
+                <input type="text" id="model" placeholder="e.g., mistralai/Mistral-7B-Instruct-v0.3">
+                <select id="modelSelector" style="margin-top: 8px; padding: 8px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+                    <option value="">Loading available models...</option>
+                </select>
+                <button id="refreshModelsBtn" style="margin-top: 8px; padding: 8px 12px; background: #17a2b8; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">Refresh Models</button>
+            </div>
+        </div>
+
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+                <div class="message assistant">
+                    <p>👋 Welcome to Hugging Face Chat Pro!</p>
+                    <p><strong>🚀 Quick Start:</strong></p>
+                    <ol>
+                        <li>Enter your Hugging Face API token above</li>
+                        <li>Click "Save" to automatically fetch your available models</li>
+                        <li>Select a model from the dropdown (or type manually)</li>
+                        <li>Start chatting!</li>
+                    </ol>
+                    <p><strong>📊 Model Categories:</strong></p>
+                    <ul>
+                        <li><span class="status-indicator status-pro"></span><strong>Pro Inference API:</strong> Requires Pro subscription for unlimited usage</li>
+                        <li><span class="status-indicator status-inference"></span><strong>Serverless Inference:</strong> Pay-per-use, may require model access approval</li>
+                    </ul>
+                    <p><strong>💡 Features:</strong></p>
+                    <ul>
+                        <li>🔄 <strong>Dynamic Model Loading:</strong> Automatically fetches your available models</li>
+                        <li>📋 <strong>Copy Responses:</strong> Click the copy button on any AI response</li>
+                        <li>🎨 <strong>Dark/Light Theme:</strong> Toggle with the button in the top-right</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="chat-input-container">
+                <textarea class="chat-input" id="chatInput" placeholder="Type your message here..." disabled rows="1"></textarea>
+                <button class="send-btn" id="sendBtn" disabled>Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.0/axios.min.js"></script>
+    <script type="module">
+        // Import the Hugging Face Inference library
+        import { HfInference } from 'https://cdn.skypack.dev/@huggingface/inference';
+
+        class HuggingFaceChat {
+            constructor() {
+                this.hfClient = null;
+                this.token = '';
+                this.model = '';
+                this.conversationHistory = [];
+                this.chatMessages = document.getElementById('chatMessages');
+                this.chatInput = document.getElementById('chatInput');
+                this.sendBtn = document.getElementById('sendBtn');
+                this.tokenInput = document.getElementById('token');
+                this.modelInput = document.getElementById('model');
+                this.modelSelector = document.getElementById('modelSelector');
+                this.saveTokenBtn = document.getElementById('saveTokenBtn');
+                this.themeToggle = document.getElementById('themeToggle');
+                this.refreshModelsBtn = document.getElementById('refreshModelsBtn');
+                
+                this.loadSavedToken();
+                this.loadTheme();
+                this.initializeEventListeners();
+                this.loadDefaultModels();
+            }
+
+            loadTheme() {
+                const savedTheme = localStorage.getItem('hf_chat_theme') || 'dark';
+                if (savedTheme === 'dark') {
+                    document.body.classList.add('dark-mode');
+                    this.themeToggle.textContent = '☀️';
+                } else {
+                    document.body.classList.remove('dark-mode');
+                    this.themeToggle.textContent = '🌙';
+                }
+            }
+
+            toggleTheme() {
+                document.body.classList.toggle('dark-mode');
+                const isDark = document.body.classList.contains('dark-mode');
+                
+                this.themeToggle.textContent = isDark ? '☀️' : '🌙';
+                localStorage.setItem('hf_chat_theme', isDark ? 'dark' : 'light');
+            }
+
+            loadSavedToken() {
+                const savedToken = localStorage.getItem('hf_token');
+                if (savedToken) {
+                    this.tokenInput.value = savedToken;
+                    this.saveTokenBtn.textContent = 'Saved';
+                    this.saveTokenBtn.classList.add('saved');
+                    this.updateChatAvailability();
+                    // Auto-fetch models if token exists
+                    setTimeout(() => this.fetchAvailableModels(), 1000);
+                }
+            }
+
+            loadDefaultModels() {
+                // Load hardcoded models as fallback
+                const defaultModels = {
+                    'Pro Inference API': [
+                        'mistralai/Mistral-7B-Instruct-v0.3',
+                        'mistralai/Mistral-7B-Instruct-v0.2',
+                        'mistralai/Mixtral-8x7B-Instruct-v0.1',
+                        'NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO',
+                        'HuggingFaceH4/zephyr-7b-beta',
+                        'openchat/openchat-3.5-1210',
+                        'teknium/OpenHermes-2.5-Mistral-7B'
+                    ],
+                    'Serverless Inference': [
+                        'meta-llama/Meta-Llama-3-8B-Instruct',
+                        'meta-llama/Meta-Llama-3-70B-Instruct',
+                        'meta-llama/Llama-2-7b-chat-hf',
+                        'meta-llama/Llama-2-13b-chat-hf',
+                        'meta-llama/Llama-2-70b-chat-hf',
+                        'codellama/CodeLlama-7b-Instruct-hf',
+                        'codellama/CodeLlama-13b-Instruct-hf',
+                        'WizardLM/WizardCoder-Python-34B-V1.0',
+                        'bigcode/starcoder2-15b'
+                    ]
+                };
+                this.populateModelSelector(defaultModels);
+            }
+
+            async fetchAvailableModels() {
+                const token = this.tokenInput.value.trim();
+                if (!token) {
+                    this.addMessage('Please enter your API token first to fetch available models.', false, true);
+                    return;
+                }
+
+                this.modelSelector.innerHTML = '<option value="">Fetching models...</option>';
+                
+                try {
+                    // Fetch user's available models using HF API
+                    const response = await fetch('https://huggingface.co/api/models', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const models = await response.json();
+                    
+                    // Filter models that support inference
+                    const inferenceModels = models
+                        .filter(model => 
+                            model.pipeline_tag === 'text-generation' || 
+                            model.pipeline_tag === 'conversational' ||
+                            model.pipeline_tag === 'text2text-generation' ||
+                            (model.tags && (
+                                model.tags.includes('text-generation') ||
+                                model.tags.includes('conversational') ||
+                                model.tags.includes('chat') ||
+                                model.tags.includes('instruct')
+                            ))
+                        )
+                        .slice(0, 50) // Limit to first 50 models
+                        .map(model => model.id);
+
+                    // Categorize models
+                    const categorizedModels = this.categorizeModels(inferenceModels);
+                    this.populateModelSelector(categorizedModels);
+                    
+                    this.addMessage(`✅ Fetched ${inferenceModels.length} available models successfully!`, false);
+                    
+                } catch (error) {
+                    console.error('Failed to fetch models:', error);
+                    this.addMessage(`❌ Failed to fetch models: ${error.message}. Using default model list.`, false, true);
+                    this.loadDefaultModels();
+                }
+            }
+
+            categorizeModels(models) {
+                const categorized = {
+                    'Pro Inference API': [],
+                    'Serverless Inference': [],
+                    'Other Models': []
+                };
+
+                models.forEach(modelId => {
+                    if (modelId.includes('mistral') || modelId.includes('zephyr') || 
+                        modelId.includes('openchat') || modelId.includes('hermes')) {
+                        categorized['Pro Inference API'].push(modelId);
+                    } else if (modelId.includes('llama') || modelId.includes('codellama') || 
+                               modelId.includes('wizard') || modelId.includes('starcoder')) {
+                        categorized['Serverless Inference'].push(modelId);
+                    } else {
+                        categorized['Other Models'].push(modelId);
+                    }
+                });
+
+                // Remove empty categories
+                Object.keys(categorized).forEach(key => {
+                    if (categorized[key].length === 0) {
+                        delete categorized[key];
+                    }
+                });
+
+                return categorized;
+            }
+
+            populateModelSelector(categorizedModels) {
+                this.modelSelector.innerHTML = '<option value="">Select a deployed model...</option>';
+                
+                Object.entries(categorizedModels).forEach(([category, models]) => {
+                    const optgroup = document.createElement('optgroup');
+                    let emoji = '🔹';
+                    
+                    if (category.includes('Pro')) emoji = '🟡';
+                    else if (category.includes('Serverless')) emoji = '🔵';
+                    else if (category.includes('Free')) emoji = '🟢';
+                    
+                    optgroup.label = `${emoji} ${category} Models`;
+                    
+                    models.forEach(modelId => {
+                        const option = document.createElement('option');
+                        option.value = modelId;
+                        option.textContent = modelId;
+                        optgroup.appendChild(option);
+                    });
+                    
+                    this.modelSelector.appendChild(optgroup);
+                });
+            }
+
+            initializeEventListeners() {
+                // Theme toggle
+                this.themeToggle.addEventListener('click', () => this.toggleTheme());
+
+                // Save token functionality
+                this.saveTokenBtn.addEventListener('click', () => {
+                    const token = this.tokenInput.value.trim();
+                    if (token) {
+                        localStorage.setItem('hf_token', token);
+                        this.saveTokenBtn.textContent = 'Saved';
+                        this.saveTokenBtn.classList.add('saved');
+                        setTimeout(() => {
+                            this.saveTokenBtn.textContent = 'Save';
+                            this.saveTokenBtn.classList.remove('saved');
+                        }, 2000);
+                        // Auto-fetch models when token is saved
+                        this.fetchAvailableModels();
+                    }
+                });
+
+                // Refresh models button
+                this.refreshModelsBtn.addEventListener('click', () => {
+                    this.fetchAvailableModels();
+                });
+
+                // Reset save button when token changes
+                this.tokenInput.addEventListener('input', () => {
+                    this.saveTokenBtn.textContent = 'Save';
+                    this.saveTokenBtn.classList.remove('saved');
+                    this.updateChatAvailability();
+                });
+
+                this.modelInput.addEventListener('input', () => this.updateChatAvailability());
+                
+                // Model selector functionality
+                this.modelSelector.addEventListener('change', (e) => {
+                    if (e.target.value) {
+                        this.modelInput.value = e.target.value;
+                        this.updateChatAvailability();
+                    }
+                });
+                
+                // Send message on button click
+                this.sendBtn.addEventListener('click', () => this.sendMessage());
+                
+                // Send message on Ctrl+Enter
+                this.chatInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                });
+
+                // Auto-resize textarea
+                this.chatInput.addEventListener('input', () => {
+                    this.chatInput.style.height = 'auto';
+                    this.chatInput.style.height = this.chatInput.scrollHeight + 'px';
+                });
+            }
+
+            updateChatAvailability() {
+                const hasToken = this.tokenInput.value.trim() !== '';
+                const hasModel = this.modelInput.value.trim() !== '';
+                
+                this.chatInput.disabled = !(hasToken && hasModel);
+                this.sendBtn.disabled = !(hasToken && hasModel);
+                
+                if (hasToken && hasModel) {
+                    this.token = this.tokenInput.value.trim();
+                    this.model = this.modelInput.value.trim();
+                    this.hfClient = new HfInference(this.token);
+                    this.chatInput.placeholder = 'Type your message here... (Ctrl+Enter to send)';
+                } else {
+                    this.chatInput.placeholder = 'Enter token and model name first...';
+                }
+            }
+
+            formatMessage(content) {
+                // Convert markdown-style formatting to HTML with simplified approach
+                let formatted = content;
+                
+                // Handle code blocks first (preserve existing functionality)
+                formatted = formatted.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+                    const language = lang || 'code';
+                    return `<pre data-lang="${language}"><code>${this.escapeHtml(code.trim())}</code></pre>`;
+                });
+                
+                // Handle inline code (simplified)
+                formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
+                
+                // Simplified console output detection
+                formatted = formatted.replace(/(?:Output:|Result:|Console:)\s*([\s\S]*?)(?=\n\n|$)/gi, (match, output) => {
+                    const cleanOutput = output.trim();
+                    if (cleanOutput.length > 0) {
+                        return `<div class="console-output">${this.escapeHtml(cleanOutput)}</div>`;
+                    }
+                    return match;
+                });
+                
+                // Handle bold text
+                formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                
+                // Simple bullet points
+                formatted = formatted.replace(/^\s*[-\*•]\s+(.+)$/gm, '<li>$1</li>');
+                if (formatted.includes('<li>')) {
+                    formatted = formatted.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+                }
+                
+                // Simple numbered lists
+                formatted = formatted.replace(/^\s*\d+\.\s+(.+)$/gm, '<li>$1</li>');
+                if (formatted.includes('<li>') && !formatted.includes('<ul>')) {
+                    formatted = formatted.replace(/(<li>.*<\/li>)/s, '<ol>$1</ol>');
+                }
+                
+                // Convert line breaks to paragraphs for better readability
+                formatted = formatted.replace(/\n\n+/g, '</p><p>');
+                if (!formatted.startsWith('<p>') && !formatted.includes('<pre>') && !formatted.includes('<ul>') && !formatted.includes('<ol>')) {
+                    formatted = '<p>' + formatted + '</p>';
+                }
+                
+                return formatted;
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            addMessage(content, isUser = false, isError = false) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
+                if (isError) messageDiv.classList.add('error');
+
+                if (isUser) {
+                    const messageContent = document.createElement('p');
+                    messageContent.textContent = content;
+                    messageDiv.appendChild(messageContent);
+                } else {
+                    messageDiv.innerHTML = this.formatMessage(content);
+                    // add copy icon button for assistant messages
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'copy-btn';
+                    copyBtn.innerHTML = '📋';
+                    copyBtn.addEventListener('click', () => {
+                        navigator.clipboard.writeText(content).then(() => {
+                            copyBtn.innerHTML = '✅';
+                            setTimeout(() => copyBtn.innerHTML = '📋', 2000);
+                        });
+                    });
+                    messageDiv.appendChild(copyBtn);
+                }
+
+                this.chatMessages.appendChild(messageDiv);
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            }
+
+            showLoading() {
+                const loadingDiv = document.createElement('div');
+                loadingDiv.className = 'message assistant loading';
+                loadingDiv.textContent = 'AI is thinking...';
+                loadingDiv.id = 'loadingMessage';
+                
+                this.chatMessages.appendChild(loadingDiv);
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            }
+
+            hideLoading() {
+                const loadingMessage = document.getElementById('loadingMessage');
+                if (loadingMessage) {
+                    loadingMessage.remove();
+                }
+            }
+
+            async sendMessage() {
+                const message = this.chatInput.value.trim();
+                if (!message) return;
+
+                // Add user message
+                this.addMessage(message, true);
+                this.conversationHistory.push({ role: "user", content: message });
+                this.chatInput.value = '';
+                this.chatInput.style.height = 'auto';
+                
+                // Disable input while processing
+                this.chatInput.disabled = true;
+                this.sendBtn.disabled = true;
+                
+                // Show loading
+                this.showLoading();
+
+                try {
+                    const response = await this.queryHuggingFace(message);
+                    this.hideLoading();
+                    
+                    if (response) {
+                        this.addMessage(response, false);
+                        this.conversationHistory.push({ role: "assistant", content: response });
+                    } else {
+                        this.addMessage('No response generated. Try rephrasing your question.', false, true);
+                    }
+                } catch (error) {
+                    this.hideLoading();
+                    this.addMessage(`Error: ${error.message}`, false, true);
+                }
+
+                // Re-enable input
+                this.updateChatAvailability();
+            }
+
+            async queryHuggingFace(message) {
+                try {
+                    // Check if this is a chat completion model
+                    if (this.model.includes('mistral') || this.model.includes('Mistral') || 
+                        this.model.includes('llama') || this.model.includes('Llama') ||
+                        this.model.includes('instruct') || this.model.includes('Instruct') ||
+                        this.model.includes('chat') || this.model.includes('Chat') ||
+                        this.model.includes('hermes') || this.model.includes('Hermes') ||
+                        this.model.includes('zephyr') || this.model.includes('openchat') ||
+                        this.model.includes('wizard') || this.model.includes('Wizard')) {
+                        
+                        // Use chat completion API
+                        const chatCompletion = await this.hfClient.chatCompletion({
+                            model: this.model,
+                            messages: this.conversationHistory.slice(-10),
+                            max_tokens: 1024,
+                            temperature: 0.7,
+                            top_p: 0.9,
+                        });
+                        
+                        return chatCompletion.choices[0].message.content;
+                    } else {
+                        // Use text generation API for other models
+                        const response = await this.hfClient.textGeneration({
+                            model: this.model,
+                            inputs: this.buildConversationPrompt(message),
+                            parameters: {
+                                max_new_tokens: 512,
+                                temperature: 0.7,
+                                top_p: 0.9,
+                                do_sample: true,
+                                return_full_text: false,
+                                stop: ["Human:", "User:", "\n\n"]
+                            }
+                        });
+                        
+                        return response.generated_text.trim();
+                    }
+                } catch (error) {
+                    // Handle common errors with more specific messages
+                    if (error.message.includes('401') || error.message.includes('Invalid token')) {
+                        throw new Error('Invalid API token. Please check your Hugging Face token and save it.');
+                    } else if (error.message.includes('404') || error.message.includes('not found')) {
+                        throw new Error('Model not found. Please check the model name or request access if needed.');
+                    } else if (error.message.includes('503') || error.message.includes('loading')) {
+                        throw new Error('Model is currently loading. Please wait 2-3 minutes and try again.');
+                    } else if (error.message.includes('429') || error.message.includes('rate limit')) {
+                        throw new Error('Rate limit exceeded. Please wait a moment and try again.');
+                    } else if (error.message.includes('500') || error.message.includes('Internal Server Error')) {
+                        throw new Error('Server error. The model might be overloaded. Try again in a few minutes.');
+                    } else if (error.message.includes('unauthorized') || error.message.includes('access')) {
+                        throw new Error('Access denied. You may need to request access to this model or upgrade to Pro.');
+                    } else {
+                        throw new Error(`${error.message || 'Unknown error occurred'}`);
+                    }
+                }
+            }
+
+            buildConversationPrompt(message) {
+                // Build a conversation prompt for non-chat models
+                let prompt = "";
+                const recentHistory = this.conversationHistory.slice(-6); // Keep last 6 messages
+                
+                for (const msg of recentHistory) {
+                    if (msg.role === "user") {
+                        prompt += `Human: ${msg.content}\n`;
+                    } else {
+                        prompt += `Assistant: ${msg.content}\n`;
+                    }
+                }
+                
+                prompt += `Human: ${message}\nAssistant:`;
+                return prompt;
+            }
+        }
+
+        // Initialize the chat app
+        document.addEventListener('DOMContentLoaded', () => {
+            new HuggingFaceChat();
+        });
+    </script>
+</body>
+</html>
